@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { Leaf, LogOut, User } from 'lucide-react'
+import { Leaf, LogOut, User, Clock } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 
 export default function Navbar() {
@@ -25,6 +25,12 @@ export default function Navbar() {
           <Link to="/" className="hover:text-emerald-600 transition-colors">Home</Link>
           <Link to="/predict" className="hover:text-emerald-600 transition-colors">AI Scanner</Link>
           <Link to="/diseases" className="hover:text-emerald-600 transition-colors">Crop Library</Link>
+          {user && (
+            <Link to="/history" className="hover:text-emerald-600 transition-colors flex items-center gap-1">
+              <Clock className="w-3.5 h-3.5" />
+              <span>History</span>
+            </Link>
+          )}
         </nav>
 
         <div className="flex items-center gap-3">
@@ -36,7 +42,7 @@ export default function Navbar() {
               </div>
               <button
                 onClick={handleLogout}
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-rose-600 transition-colors px-3 py-2 rounded-xl hover:bg-rose-50"
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-rose-600 transition-colors px-3 py-2 rounded-xl hover:bg-rose-50 cursor-pointer"
               >
                 <LogOut className="w-4 h-4" />
                 <span>Logout</span>

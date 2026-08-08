@@ -8,6 +8,7 @@ import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import PredictPage from './pages/PredictPage'
 import DiseasesPage from './pages/DiseasesPage'
+import HistoryPage from './pages/HistoryPage'
 import NotFoundPage from './pages/NotFoundPage'
 
 export default function App() {
@@ -26,6 +27,14 @@ export default function App() {
               element={
                 <ProtectedRoute>
                   <PredictPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/history"
+              element={
+                <ProtectedRoute>
+                  <HistoryPage />
                 </ProtectedRoute>
               }
             />
