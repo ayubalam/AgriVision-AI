@@ -1,9 +1,37 @@
 import { useState } from 'react';
 import Navbar from './components/Navbar';
 import ImageUploader from './components/ImageUploader';
+import ResultCard from './components/ResultCard';
+import API from './api/client';
 
 export default function App() {
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState(null);
+
+  const handleImageAnalyze = async (file) => {
+    if (!file) {
+      setResult(null);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      const response = await API.post('/predict', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setResult(response.data.data);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to analyze image. Please ensure Flask server is running.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
@@ -18,13 +46,15 @@ export default function App() {
           </p>
         </header>
 
-        <ImageUploader onImageSelect={setSelectedFile} />
+        <ImageUploader onImageSelect={handleImageAnalyze} />
 
-        {selectedFile && (
-          <p className="text-center text-xs text-slate-500 mt-4">
-            Ready to analyze: {selectedFile.name}
-          </p>
+        {error && (
+          <div className="w-full max-w-lg mx-auto mt-4 p-3 bg-red-50 text-red-600 text-xs text-center rounded-lg border border-red-200">
+            {error}
+          </div>
         )}
+
+        <ResultCard result={result} loading={loading} />
       </main>
     </div>
   );
