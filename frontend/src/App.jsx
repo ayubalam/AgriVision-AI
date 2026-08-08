@@ -1,24 +1,35 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Navbar from './components/layout/Navbar'
 import Footer from './components/layout/Footer'
-import LandingPage from './pages/LandingPage'
+import ProtectedRoute from './components/layout/ProtectedRoute'
+
+import HomePage from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
-import NotFoundPage from './pages/NotFoundPage'
+import PredictPage from './pages/PredictPage'
+import DiseasesPage from './pages/DiseasesPage'
 
 export default function App() {
   return (
     <BrowserRouter>
-      <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 font-sans">
+      <div className="min-h-screen flex flex-col bg-slate-50 text-slate-800 antialiased font-sans">
         <Navbar />
-        <div className="flex-1">
+        <main className="flex-1">
           <Routes>
-            <Route path="/" element={<LandingPage />} />
+            <Route path="/" element={<HomePage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
-            <Route path="*" element={<NotFoundPage />} />
+            <Route path="/diseases" element={<DiseasesPage />} />
+            <Route
+              path="/predict"
+              element={
+                <ProtectedRoute>
+                  <PredictPage />
+                </ProtectedRoute>
+              }
+            />
           </Routes>
-        </div>
+        </main>
         <Footer />
       </div>
     </BrowserRouter>
