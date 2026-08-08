@@ -1,13 +1,12 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Leaf, Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react'
+import { useAuth } from '../hooks/useAuth'
 
 export default function LoginPage() {
   const navigate = useNavigate()
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  })
+  const { login } = useAuth()
+  const [formData, setFormData] = useState({ email: '', password: '' })
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
@@ -16,22 +15,22 @@ export default function LoginPage() {
     if (error) setError('')
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    
     if (!formData.email || !formData.password) {
       setError('Please fill in all required fields.')
       return
     }
 
     setIsLoading(true)
-    
-    // Simulated auth flow until backend integration (Phase 8)
-    setTimeout(() => {
+    try {
+      await login(formData)
+      navigate('/predict')
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Invalid email or password.')
+    } finally {
       setIsLoading(false)
-      // Navigate to dashboard after login simulation
-      navigate('/dashboard')
-    }, 1000)
+    }
   }
 
   return (
@@ -72,7 +71,6 @@ export default function LoginPage() {
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="block text-xs font-semibold text-slate-700">Password</label>
-              <a href="#" className="text-[11px] font-medium text-emerald-600 hover:underline">Forgot password?</a>
             </div>
             <div className="relative">
               <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
