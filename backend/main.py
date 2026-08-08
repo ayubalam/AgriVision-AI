@@ -1,18 +1,29 @@
 import os
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.config.settings import settings
-from app.routes import health
+from app.config.database import connect_to_mongo, close_mongo_connection
+from app.routes import health, auth
 
 os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    connect_to_mongo()
+    yield
+    # Shutdown
+    close_mongo_connection()
 
 app = FastAPI(
     title=settings.APP_NAME,
     version="1.0.0",
     description="Multi-Crop Leaf Disease Detection & Treatment Recommendation API",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
+    lifespan=lifespan
 )
 
 # Configure CORS
@@ -29,6 +40,7 @@ app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads"
 
 # Include Routers
 app.include_router(health.router, prefix=settings.API_V1_PREFIX)
+app.include_router(auth.router, prefix=settings.API_V1_PREFIX)
 
 @app.get("/")
 def root():
