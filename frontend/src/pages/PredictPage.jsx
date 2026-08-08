@@ -79,7 +79,7 @@ export default function PredictPage() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        <div className={`lg:col-span-${result ? '5' : '12 max-w-2xl mx-auto w-full'}`}>
+        <div className={result ? "lg:col-span-5" : "w-full max-w-2xl mx-auto lg:col-span-12"}>
           <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
             {!previewUrl ? (
               <div
