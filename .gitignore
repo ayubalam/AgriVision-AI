@@ -1,0 +1,41 @@
+# Environment & Secrets
+.env
+.env.local
+.env.*.local
+*.pem
+
+# Dependencies
+node_modules/
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+
+# ML Models & Datasets
+ml/data/*
+!ml/data/.gitkeep
+dataset/*
+!dataset/.gitkeep
+*.h5
+*.keras
+*.tflite
+*.onnx
+*.pkl
+
+# Uploads & Runtime Data
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Build Outputs
+frontend/dist/
+frontend/dist-ssr/
+*.egg-info/
+.pytest_cache/
+
+# IDE & System Files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

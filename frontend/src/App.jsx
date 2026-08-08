@@ -1,99 +1,40 @@
-import { useState } from 'react';
-import Navbar from './components/Navbar';
-import ImageUploader from './components/ImageUploader';
-import ResultCard from './components/ResultCard';
-import HistoryTable from './components/HistoryTable';
-import Dashboard from './components/Dashboard';
-import { useAuth } from './context/AuthContext';
-import API from './api/client';
-import { LayoutDashboard, Scan } from 'lucide-react';
+import { motion } from 'framer-motion'
+import { Leaf, ShieldCheck, Cpu, ArrowRight } from 'lucide-react'
 
 export default function App() {
-  const [result, setResult] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('scan');
-  const { user } = useAuth();
-
-  const handleImageSelected = async (file) => {
-    const formData = new FormData();
-    formData.append('image', file);
-
-    setLoading(true);
-    setError(null);
-    setResult(null);
-
-    try {
-      const response = await API.post('/predict', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      setResult(response.data.data);
-    } catch (err) {
-      setError(err.response?.data?.error || 'Failed to analyze image');
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-800 pb-12">
-      <Navbar />
+    <div className="min-h-screen bg-gradient-to-b from-emerald-50/50 to-slate-50 flex flex-col items-center justify-center p-6 text-slate-800">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="max-w-xl w-full bg-white border border-emerald-100 rounded-2xl p-8 shadow-xl shadow-emerald-900/5 text-center"
+      >
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-emerald-500 text-white mb-6 shadow-lg shadow-emerald-500/30">
+          <Leaf className="w-8 h-8" />
+        </div>
 
-      <main className="max-w-4xl mx-auto px-4 pt-8 space-y-8">
-        {user && (
-          <div className="flex justify-center border-b border-slate-200">
-            <button
-              onClick={() => setActiveTab('scan')}
-              className={`pb-3 px-6 text-xs font-semibold flex items-center gap-2 border-b-2 transition-all ${
-                activeTab === 'scan'
-                  ? 'border-emerald-600 text-emerald-600'
-                  : 'border-transparent text-slate-400 hover:text-slate-600'
-              }`}
-            >
-              <Scan className="w-4 h-4" />
-              Disease Scanner
-            </button>
-            <button
-              onClick={() => setActiveTab('dashboard')}
-              className={`pb-3 px-6 text-xs font-semibold flex items-center gap-2 border-b-2 transition-all ${
-                activeTab === 'dashboard'
-                  ? 'border-emerald-600 text-emerald-600'
-                  : 'border-transparent text-slate-400 hover:text-slate-600'
-              }`}
-            >
-              <LayoutDashboard className="w-4 h-4" />
-              Analytics Dashboard
-            </button>
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900 mb-2">
+          AgriVision <span className="text-emerald-600">AI</span>
+        </h1>
+        <p className="text-slate-600 text-sm mb-6">
+          Phase 1 & Phase 2 Environment Setup Complete.
+        </p>
+
+        <div className="grid grid-cols-2 gap-3 mb-6 text-left">
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-slate-50 border border-slate-100 text-xs font-medium text-slate-700">
+            <Cpu className="w-4 h-4 text-emerald-600" /> Vite + React
           </div>
-        )}
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-slate-50 border border-slate-100 text-xs font-medium text-slate-700">
+            <ShieldCheck className="w-4 h-4 text-emerald-600" /> Tailwind v4
+          </div>
+        </div>
 
-        {activeTab === 'scan' ? (
-          <>
-            <section className="text-center space-y-3">
-              <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-                AI-Powered Plant Disease Detection
-              </h1>
-              <p className="text-slate-600 text-sm max-w-lg mx-auto">
-                Upload a plant leaf photo or use live camera capture to instantly identify plant health issues.
-              </p>
-            </section>
-
-            <ImageUploader onImageSelected={handleImageSelected} isLoading={loading} />
-
-            {error && (
-              <div className="max-w-2xl mx-auto p-4 bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl text-center font-medium">
-                {error}
-              </div>
-            )}
-
-            <ResultCard result={result} />
-
-            {user && <HistoryTable />}
-          </>
-        ) : (
-          <Dashboard />
-        )}
-      </main>
+        <button className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-emerald-600 text-white font-medium text-sm hover:bg-emerald-700 transition-colors shadow-md shadow-emerald-600/20 cursor-pointer">
+          Ready for Phase 3 <ArrowRight className="w-4 h-4" />
+        </button>
+      </motion.div>
     </div>
-  );
+  )
 }
