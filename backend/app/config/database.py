@@ -1,27 +1,24 @@
-from pymongo import MongoClient
+from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.errors import ConnectionFailure
 from app.config.settings import settings
 
-class Database:
-    client: MongoClient = None
-    db = None
+# Support both MONGODB_URI and MONGODB_URL setting names
+mongo_uri = getattr(settings, "MONGODB_URI", None) or getattr(settings, "MONGODB_URL", "mongodb://localhost:27017")
 
-db_instance = Database()
+# Initialize Motor Async Client and Database instance
+client = AsyncIOMotorClient(mongo_uri, serverSelectionTimeoutMS=5000)
+db = client[settings.DATABASE_NAME]
 
 def connect_to_mongo():
     try:
-        db_instance.client = MongoClient(settings.MONGODB_URI, serverSelectionTimeoutMS=5000)
-        db_instance.db = db_instance.client[settings.DATABASE_NAME]
-        # Quick server ping to confirm connection
-        db_instance.client.admin.command('ping')
         print(f"Connected successfully to MongoDB database: {settings.DATABASE_NAME}")
     except ConnectionFailure as e:
         print(f"MongoDB connection failed: {e}")
 
 def close_mongo_connection():
-    if db_instance.client:
-        db_instance.client.close()
+    if client:
+        client.close()
         print("MongoDB connection closed.")
 
 def get_database():
-    return db_instance.db
+    return db
