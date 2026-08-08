@@ -1,43 +1,48 @@
 import { useState } from 'react';
-import { Leaf, Menu, X, User } from 'lucide-react';
+import { Sprout, LogIn, LogOut, User } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import AuthModal from './AuthModal';
 
 export default function Navbar() {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { user, logout } = useAuth();
 
   return (
-    <nav className="bg-emerald-700 text-white shadow-md">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <div className="flex items-center space-x-2">
-            <Leaf className="h-8 w-8 text-emerald-300" />
-            <span className="font-bold text-xl tracking-tight">AgriVision-AI</span>
+    <>
+      <nav className="bg-white border-b border-slate-100 px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="p-2 bg-emerald-100 text-emerald-700 rounded-xl">
+            <Sprout size={24} />
           </div>
-
-          <div className="hidden md:flex items-center space-x-6 font-medium">
-            <a href="#home" className="hover:text-emerald-200 transition">Home</a>
-            <a href="#detect" className="hover:text-emerald-200 transition">Analyze Leaf</a>
-            <a href="#history" className="hover:text-emerald-200 transition">History</a>
-            <button className="flex items-center gap-1 bg-emerald-800 hover:bg-emerald-900 px-4 py-2 rounded-lg text-sm transition">
-              <User size={16} /> Login
-            </button>
-          </div>
-
-          <div className="md:hidden">
-            <button onClick={() => setIsOpen(!isOpen)} className="p-2 rounded-md hover:bg-emerald-600">
-              {isOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
-          </div>
+          <span className="text-xl font-bold tracking-tight text-slate-800">AgriVision AI</span>
         </div>
-      </div>
 
-      {isOpen && (
-        <div className="md:hidden bg-emerald-800 px-4 pt-2 pb-4 space-y-2">
-          <a href="#home" className="block py-2 hover:text-emerald-200">Home</a>
-          <a href="#detect" className="block py-2 hover:text-emerald-200">Analyze Leaf</a>
-          <a href="#history" className="block py-2 hover:text-emerald-200">History</a>
-          <button className="w-full text-left py-2 hover:text-emerald-200">Login</button>
+        <div>
+          {user ? (
+            <div className="flex items-center gap-4">
+              <span className="text-sm font-medium text-slate-700 flex items-center gap-1.5">
+                <User size={16} className="text-emerald-600" />
+                {user.name || user.email}
+              </span>
+              <button
+                onClick={logout}
+                className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-red-600 font-medium transition"
+              >
+                <LogOut size={16} /> Logout
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2 rounded-lg transition"
+            >
+              <LogIn size={16} /> Sign In
+            </button>
+          )}
         </div>
-      )}
-    </nav>
+      </nav>
+
+      <AuthModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+    </>
   );
 }
