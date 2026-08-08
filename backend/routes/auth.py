@@ -6,7 +6,16 @@ from utils.jwt_helper import generate_token
 
 auth_bp = Blueprint('auth', __name__)
 client = MongoClient(MONGO_URI)
-db = client.get_database() if client.get_default_database() else client['agrivision']
+
+# Get default database from MONGO_URI or fallback to 'agrivision'
+try:
+    db = client.get_default_database()
+    if db is None:
+        db = client['agrivision']
+except Exception:
+    db = client['agrivision']
+
+users_col = db['users']
 users_col = db['users']
 
 @auth_bp.route('/auth/register', methods=['POST'])
