@@ -1,15 +1,12 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Leaf, User, Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react'
+import { useAuth } from '../hooks/useAuth'
 
 export default function RegisterPage() {
   const navigate = useNavigate()
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: ''
-  })
+  const { register } = useAuth()
+  const [formData, setFormData] = useState({ name: '', email: '', password: '', confirmPassword: '' })
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
@@ -18,7 +15,7 @@ export default function RegisterPage() {
     if (error) setError('')
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
 
     if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
@@ -37,12 +34,18 @@ export default function RegisterPage() {
     }
 
     setIsLoading(true)
-
-    // Simulated registration flow until backend integration (Phase 8)
-    setTimeout(() => {
+    try {
+      await register({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password
+      })
+      navigate('/predict')
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Registration failed. Try again.')
+    } finally {
       setIsLoading(false)
-      navigate('/login')
-    }, 1000)
+    }
   }
 
   return (
