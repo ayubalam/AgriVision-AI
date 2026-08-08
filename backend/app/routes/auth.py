@@ -1,91 +1,138 @@
-from datetime import datetime, timezone
-from fastapi import APIRouter, HTTPException, status, Depends
-from app.config.database import get_database
-from app.models.user_schema import UserRegister, UserLogin, UserResponse, TokenResponse
-from app.utils.security import hash_password, verify_password, create_access_token, get_current_user_email
+from datetime import datetime, timedelta
+from typing import Optional
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from pydantic import BaseModel, EmailStr
+import jwt
+from passlib.context import CryptContext
+from bson import ObjectId
+from app.config.settings import settings
+from app.config.database import db
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
-@router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
-def register_user(user_data: UserRegister):
-    db = get_database()
-    if db is None:
-        raise HTTPException(status_code=500, detail="Database connection unavailable.")
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_PREFIX}/auth/login", auto_error=False)
+
+SECRET_KEY = getattr(settings, "JWT_SECRET_KEY", getattr(settings, "SECRET_KEY", "agrivision_secret_key_change_in_production"))
+ALGORITHM = getattr(settings, "JWT_ALGORITHM", "HS256")
+
+def hash_password(password: str) -> str:
+    return pwd_context.hash(password)
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
+
+def create_access_token(data: dict) -> str:
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(minutes=getattr(settings, "ACCESS_TOKEN_EXPIRE_MINUTES", 1440))
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+async def get_current_user(token: Optional[str] = Depends(oauth2_scheme)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
     
-    users_collection = db["users"]
-    
-    # Check if email exists
-    if users_collection.find_one({"email": user_data.email}):
+    if not token or token in ["undefined", "null", ""]:
+        print("❌ Auth Error: Missing or undefined Bearer token in headers.")
+        raise credentials_exception
+
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: str = payload.get("sub")
+        if not user_id:
+            print("❌ Auth Error: 'sub' missing from token payload.")
+            raise credentials_exception
+    except Exception as e:
+        print(f"❌ Auth Error: JWT decode failed - {str(e)}")
+        raise credentials_exception
+
+    user = None
+    try:
+        if ObjectId.is_valid(user_id):
+            user = await db.users.find_one({"_id": ObjectId(user_id)})
+    except Exception:
+        pass
+
+    if not user:
+        user = await db.users.find_one({"email": user_id})
+
+    if not user:
+        print(f"❌ Auth Error: User '{user_id}' not found in MongoDB.")
+        raise credentials_exception
+
+    return user
+
+class RegisterSchema(BaseModel):
+    name: str
+    email: EmailStr
+    password: str
+
+class LoginSchema(BaseModel):
+    email: EmailStr
+    password: str
+
+@router.post("/register", status_code=status.HTTP_201_CREATED)
+async def register_user(user_data: RegisterSchema):
+    existing_user = await db.users.find_one({"email": user_data.email})
+    if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="A user with this email address already exists."
+            detail="User with this email already exists"
         )
-    
-    # Create new user document
-    now = datetime.now(timezone.utc)
-    user_doc = {
+
+    new_user = {
         "name": user_data.name,
         "email": user_data.email,
         "passwordHash": hash_password(user_data.password),
-        "createdAt": now,
-        "updatedAt": now
+        "created_at": datetime.utcnow().isoformat()
     }
     
-    result = users_collection.insert_one(user_doc)
-    user_id = str(result.inserted_id)
-    
-    # Generate token
-    token = create_access_token({"sub": user_data.email, "id": user_id})
-    
-    user_resp = UserResponse(
-        id=user_id,
-        name=user_data.name,
-        email=user_data.email,
-        createdAt=now
-    )
-    
-    return TokenResponse(access_token=token, user=user_resp)
+    result = await db.users.insert_one(new_user)
+    user_id_str = str(result.inserted_id)
+    access_token = create_access_token(data={"sub": user_id_str})
 
-@router.post("/login", response_model=TokenResponse)
-def login_user(credentials: UserLogin):
-    db = get_database()
-    if db is None:
-        raise HTTPException(status_code=500, detail="Database connection unavailable.")
-    
-    users_collection = db["users"]
-    user = users_collection.find_one({"email": credentials.email})
-    
-    if not user or not verify_password(credentials.password, user["passwordHash"]):
+    return {
+        "access_token": access_token,
+        "token": access_token,
+        "token_type": "bearer",
+        "user": {
+            "id": user_id_str,
+            "name": user_data.name,
+            "email": user_data.email
+        }
+    }
+
+@router.post("/login")
+async def login_user(credentials: LoginSchema):
+    user = await db.users.find_one({"email": credentials.email})
+    if not user or not verify_password(credentials.password, user.get("passwordHash", "")):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password credentials."
+            detail="Invalid email or password"
         )
-    
-    user_id = str(user["_id"])
-    token = create_access_token({"sub": user["email"], "id": user_id})
-    
-    user_resp = UserResponse(
-        id=user_id,
-        name=user["name"],
-        email=user["email"],
-        createdAt=user.get("createdAt", datetime.now(timezone.utc))
-    )
-    
-    return TokenResponse(access_token=token, user=user_resp)
 
-@router.get("/me", response_model=UserResponse)
-def get_current_user_profile(email: str = Depends(get_current_user_email)):
-    db = get_database()
-    if db is None:
-        raise HTTPException(status_code=500, detail="Database connection unavailable.")
-    
-    user = db["users"].find_one({"email": email})
-    if not user:
-        raise HTTPException(status_code=404, detail="User profile not found.")
-    
-    return UserResponse(
-        id=str(user["_id"]),
-        name=user["name"],
-        email=user["email"],
-        createdAt=user.get("createdAt", datetime.now(timezone.utc))
-    )
+    user_id_str = str(user["_id"])
+    access_token = create_access_token(data={"sub": user_id_str})
+
+    return {
+        "access_token": access_token,
+        "token": access_token,
+        "token_type": "bearer",
+        "user": {
+            "id": user_id_str,
+            "name": user.get("name", ""),
+            "email": user.get("email", "")
+        }
+    }
+
+@router.get("/me")
+async def get_me(current_user: dict = Depends(get_current_user)):
+    return {
+        "id": str(current_user["_id"]),
+        "name": current_user.get("name", ""),
+        "email": current_user.get("email", "")
+    }
