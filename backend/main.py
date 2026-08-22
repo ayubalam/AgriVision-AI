@@ -6,6 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from app.config.settings import settings
 from app.config.database import connect_to_mongo, close_mongo_connection
 from app.routes import health, auth, predict
+from app.routes.chat import router as chat_router
 
 os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
 
@@ -36,7 +37,7 @@ app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads"
 app.include_router(health.router, prefix=settings.API_V1_PREFIX)
 app.include_router(auth.router, prefix=settings.API_V1_PREFIX)
 app.include_router(predict.router, prefix=settings.API_V1_PREFIX)
-
+app.include_router(chat_router, prefix="/api")
 @app.get("/")
 def root():
     return {
