@@ -95,3 +95,39 @@ async def get_prediction_history(
         return history
     except Exception:
         return []
+
+@router.get("/analytics")
+async def get_analytics(
+    current_user: dict = Depends(get_current_user)
+):
+    try:
+        user_id = str(current_user["_id"])
+
+        total_scans = await db.scans.count_documents({"user_id": user_id})
+        healthy_scans = await db.scans.count_documents({"user_id": user_id, "isHealthy": True})
+        infected_scans = await db.scans.count_documents({"user_id": user_id, "isHealthy": False})
+
+        pipeline = [
+            {"$match": {"user_id": user_id, "isHealthy": False}},
+            {"$group": {"_id": "$disease", "count": {"$sum": 1}}},
+            {"$sort": {"count": -1}},
+            {"$limit": 5}
+        ]
+        top_diseases_cursor = db.scans.aggregate(pipeline)
+        top_diseases = [
+            {"disease": doc["_id"], "count": doc["count"]}
+            async for doc in top_diseases_cursor
+        ]
+
+        return {
+            "totalScans": total_scans,
+            "healthyScans": healthy_scans,
+            "infectedScans": infected_scans,
+            "topDiseases": top_diseases
+        }
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch analytics metrics: {str(e)}"
+        )
