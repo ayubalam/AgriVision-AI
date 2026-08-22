@@ -5,6 +5,7 @@ import { predictAPI } from '../services/api'
 import ChatAssistant from '../components/ChatAssistant'
 import ReportButton from '../components/ReportButton'
 import CameraCapture from '../components/CameraCapture'
+import { saveScanToHistory } from '../utils/historyStorage'
 
 export default function PredictPage() {
   const location = useLocation()
@@ -65,6 +66,7 @@ export default function PredictPage() {
     try {
       const response = await predictAPI.scanLeaf(formData)
       setResult(response.data)
+      saveScanToHistory(response.data, previewUrl)
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to analyze the leaf image. Please try again.')
     } finally {
