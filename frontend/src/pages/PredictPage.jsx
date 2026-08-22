@@ -1,9 +1,10 @@
 import { useState, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
-import { Upload, Leaf, AlertTriangle, CheckCircle2, RefreshCw, Sparkles, Droplets, Sprout, ShieldAlert } from 'lucide-react'
+import { Upload, Leaf, AlertTriangle, CheckCircle2, RefreshCw, Sparkles, Droplets, Sprout, ShieldAlert, Camera } from 'lucide-react'
 import { predictAPI } from '../services/api'
 import ChatAssistant from '../components/ChatAssistant'
 import ReportButton from '../components/ReportButton'
+import CameraCapture from '../components/CameraCapture'
 
 export default function PredictPage() {
   const location = useLocation()
@@ -22,6 +23,7 @@ export default function PredictPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [result, setResult] = useState(initialScan)
+  const [showCamera, setShowCamera] = useState(false)
 
   const handleFileSelect = (file) => {
     if (!file) return
@@ -34,6 +36,14 @@ export default function PredictPage() {
     setResult(null)
     setSelectedFile(file)
     setPreviewUrl(URL.createObjectURL(file))
+  }
+
+  const handleCameraCapture = (file, dataUrl) => {
+    setShowCamera(false)
+    setError('')
+    setResult(null)
+    setSelectedFile(file)
+    setPreviewUrl(dataUrl)
   }
 
   const handleDrop = (e) => {
@@ -80,7 +90,7 @@ export default function PredictPage() {
           AI Leaf Disease Scanner
         </h1>
         <p className="text-slate-600 text-sm mt-2">
-          Upload a clear photograph of an infected leaf to receive disease identification and tailored treatment plans.
+          Upload or capture a photograph of an infected leaf to receive disease identification and tailored treatment plans.
         </p>
       </div>
 
@@ -95,26 +105,42 @@ export default function PredictPage() {
         <div className={result ? "lg:col-span-5" : "w-full max-w-2xl mx-auto lg:col-span-12"}>
           <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs">
             {!previewUrl ? (
-              <div
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={handleDrop}
-                onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-slate-300 hover:border-emerald-500 bg-slate-50 hover:bg-emerald-50/40 rounded-xl p-10 text-center cursor-pointer transition-all flex flex-col items-center justify-center min-h-[280px]"
-              >
-                <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-4">
-                  <Upload className="w-6 h-6" />
+              <div className="space-y-4">
+                <div
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-2 border-dashed border-slate-300 hover:border-emerald-500 bg-slate-50 hover:bg-emerald-50/40 rounded-xl p-8 text-center cursor-pointer transition-all flex flex-col items-center justify-center min-h-[220px]"
+                >
+                  <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-3">
+                    <Upload className="w-6 h-6" />
+                  </div>
+                  <p className="text-sm font-semibold text-slate-800">
+                    Click to upload or drag & drop leaf photo
+                  </p>
+                  <p className="text-xs text-slate-500 mt-1">Supports JPG, PNG, WEBP (Max 10MB)</p>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])}
+                  />
                 </div>
-                <p className="text-sm font-semibold text-slate-800">
-                  Click to upload or drag & drop leaf photo
-                </p>
-                <p className="text-xs text-slate-500 mt-1">Supports JPG, PNG, WEBP (Max 10MB)</p>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])}
-                />
+
+                <div className="relative flex items-center justify-center">
+                  <div className="border-t border-slate-200 w-full" />
+                  <span className="bg-white px-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider absolute">OR</span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowCamera(true)}
+                  className="w-full py-3 px-4 bg-slate-100 hover:bg-slate-200/80 text-slate-800 font-semibold rounded-xl text-xs transition-all border border-slate-200 flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Camera className="w-4 h-4 text-emerald-600" />
+                  <span>Use Live Camera Scanner</span>
+                </button>
               </div>
             ) : (
               <div className="space-y-4">
@@ -247,6 +273,13 @@ export default function PredictPage() {
           </div>
         )}
       </div>
+
+      {showCamera && (
+        <CameraCapture
+          onCapture={handleCameraCapture}
+          onClose={() => setShowCamera(false)}
+        />
+      )}
     </div>
   )
 }
