@@ -1,49 +1,78 @@
-import { useState, useEffect } from 'react';
-import { Clock, Leaf, AlertTriangle, CheckCircle2, RefreshCw, MessageSquare } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { predictAPI } from '../services/api';
+import { useState, useEffect } from 'react'
+import { Clock, Leaf, AlertTriangle, CheckCircle2, RefreshCw, MessageSquare } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { predictAPI } from '../services/api'
 
 export default function HistoryPage() {
-  const [history, setHistory] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const navigate = useNavigate();
+  const [history, setHistory] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const navigate = useNavigate()
 
   useEffect(() => {
-    predictAPI
-      .getHistory()
-      .then((res) => setHistory(res.data))
-      .catch((err) => setError(err.response?.data?.detail || 'Failed to load scan history.'))
-      .finally(() => setLoading(false));
-  }, []);
+    let isMounted = true
+
+    const loadHistory = async () => {
+      try {
+        const res = await predictAPI.getHistory()
+        if (isMounted) {
+          setHistory(res.data)
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err.response?.data?.detail || 'Failed to load scan history.')
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false)
+        }
+      }
+    }
+
+    loadHistory()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   if (loading) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center">
         <RefreshCw className="w-8 h-8 text-emerald-600 animate-spin" />
       </div>
-    );
+    )
   }
 
   return (
     <div className="min-h-[85vh] py-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-      <div className="text-center max-w-2xl mx-auto mb-10">
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-semibold mb-3">
-          <Clock className="w-3.5 h-3.5 text-emerald-600" />
-          <span>Diagnostic Records</span>
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-10 max-w-2xl mx-auto text-center">
+        <div className="w-full">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-semibold mb-3">
+            <Clock className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Diagnostic Records</span>
+          </div>
+          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+            Scan History
+          </h1>
+          <p className="text-slate-600 text-sm mt-2">
+            Review your past leaf scans, diagnostic outcomes, and confidence scores.
+          </p>
         </div>
-        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-          Scan History
-        </h1>
-        <p className="text-slate-600 text-sm mt-2">
-          Review your past leaf scans, diagnostic outcomes, and confidence scores.
-        </p>
       </div>
 
       {error && (
-        <div className="max-w-3xl mx-auto mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm flex items-center gap-3">
-          <AlertTriangle className="w-5 h-5 shrink-0" />
-          <span>{error}</span>
+        <div className="max-w-3xl mx-auto mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 shrink-0" />
+            <span>{error}</span>
+          </div>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-3 py-1 bg-rose-100 hover:bg-rose-200 text-rose-800 text-xs font-semibold rounded-lg transition cursor-pointer"
+          >
+            Retry
+          </button>
         </div>
       )}
 
@@ -51,19 +80,25 @@ export default function HistoryPage() {
         <div className="text-center py-16 bg-white rounded-2xl border border-slate-200/80 shadow-xs max-w-xl mx-auto">
           <Leaf className="w-10 h-10 text-slate-300 mx-auto mb-3" />
           <h3 className="text-base font-bold text-slate-800">No Scans Found</h3>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-slate-500 mt-1 mb-6">
             You haven't performed any leaf scans yet.
           </p>
+          <button
+            onClick={() => navigate('/predict')}
+            className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl transition cursor-pointer"
+          >
+            Start First Scan
+          </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {history.map((item, index) => {
-            const dateValue = item.createdAt || item.created_at;
+            const dateValue = item.createdAt || item.created_at
             const fullImageUrl = item.imageUrl
               ? item.imageUrl.startsWith('http')
                 ? item.imageUrl
                 : `http://localhost:8000${item.imageUrl}`
-              : null;
+              : null
 
             return (
               <div
@@ -117,10 +152,10 @@ export default function HistoryPage() {
                   </button>
                 </div>
               </div>
-            );
+            )
           })}
         </div>
       )}
     </div>
-  );
+  )
 }
