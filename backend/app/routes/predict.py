@@ -1,11 +1,12 @@
 import os
 import uuid
-import shutil
+import traceback
 from datetime import datetime
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from app.config.database import db
 from app.config.settings import settings
 from app.routes.auth import get_current_user
+from app.services.model_service import predict_leaf
 
 router = APIRouter(prefix="/predict", tags=["Prediction"])
 
@@ -22,36 +23,19 @@ async def predict_leaf_disease(
                 detail="Uploaded file must be an image (JPG, PNG, WEBP)."
             )
 
+        content = await file.read()
+
+        os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+
         file_extension = os.path.splitext(file.filename)[1] or ".jpg"
         unique_filename = f"{uuid.uuid4().hex}{file_extension}"
         file_path = os.path.join(settings.UPLOAD_DIR, unique_filename)
 
         with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+            buffer.write(content)
 
         image_url = f"/uploads/{unique_filename}"
-
-        diagnosis = {
-            "crop": "Tomato",
-            "disease": "Tomato Early Blight",
-            "isHealthy": False,
-            "confidence": 95.8,
-            "description": "Early blight is caused by the fungus Alternaria solani. It produces target-like dark spots with concentric rings on foliage.",
-            "treatment": {
-                "chemical": [
-                    "Apply copper-based fungicides at first sign of spots",
-                    "Use Chlorothalonil spray every 7-10 days during humid weather"
-                ],
-                "organic": [
-                    "Spray neem oil solution directly on affected leaves",
-                    "Prune and dispose of lower infected leaves immediately"
-                ],
-                "prevention": [
-                    "Rotate crops with non-solanaceous plants every 2-3 years",
-                    "Mulch around the base to prevent fungal spores from splashing"
-                ]
-            }
-        }
+        diagnosis = predict_leaf(content)
 
         scan_record = {
             "user_id": str(current_user["_id"]),
@@ -68,8 +52,7 @@ async def predict_leaf_disease(
         try:
             result = await db.scans.insert_one(scan_record)
             scan_id = str(result.inserted_id)
-        except Exception as db_err:
-            print(f"MongoDB Insert Warning: {db_err}")
+        except Exception:
             scan_id = uuid.uuid4().hex
 
         return {
@@ -81,7 +64,7 @@ async def predict_leaf_disease(
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Prediction Endpoint Error: {str(e)}")
+        traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"An error occurred during leaf analysis: {str(e)}"
@@ -110,6 +93,5 @@ async def get_prediction_history(
             })
 
         return history
-    except Exception as e:
-        print(f"History Endpoint Error: {str(e)}")
+    except Exception:
         return []
