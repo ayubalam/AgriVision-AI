@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { Leaf, LogOut, User, Clock } from 'lucide-react'
+import { Leaf, LogOut, User, Clock, LayoutDashboard } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 
 export default function Navbar() {
@@ -26,10 +26,16 @@ export default function Navbar() {
           <Link to="/predict" className="hover:text-emerald-600 transition-colors">AI Scanner</Link>
           <Link to="/diseases" className="hover:text-emerald-600 transition-colors">Crop Library</Link>
           {user && (
-            <Link to="/history" className="hover:text-emerald-600 transition-colors flex items-center gap-1">
-              <Clock className="w-3.5 h-3.5" />
-              <span>History</span>
-            </Link>
+            <>
+              <Link to="/dashboard" className="hover:text-emerald-600 transition-colors flex items-center gap-1">
+                <LayoutDashboard className="w-3.5 h-3.5" />
+                <span>Dashboard</span>
+              </Link>
+              <Link to="/history" className="hover:text-emerald-600 transition-colors flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5" />
+                <span>History</span>
+              </Link>
+            </>
           )}
         </nav>
 

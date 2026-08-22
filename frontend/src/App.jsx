@@ -10,6 +10,7 @@ import PredictPage from './pages/PredictPage'
 import DiseasesPage from './pages/DiseasesPage'
 import HistoryPage from './pages/HistoryPage'
 import NotFoundPage from './pages/NotFoundPage'
+import DashboardPage from './pages/DashboardPage'
 
 export default function App() {
   return (
@@ -22,6 +23,7 @@ export default function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/diseases" element={<DiseasesPage />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
             <Route
               path="/predict"
               element={

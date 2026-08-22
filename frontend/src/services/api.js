@@ -26,4 +26,5 @@ export const authAPI = {
 export const predictAPI = {
   scanLeaf: (formData) => api.post('/api/predict/', formData),
   getHistory: () => api.get('/api/predict/history'),
+  getAnalytics: () => api.get('/api/predict/analytics'),
 }
