@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
 import { Upload, Leaf, AlertTriangle, CheckCircle2, RefreshCw, Sparkles, Droplets, Sprout, ShieldAlert } from 'lucide-react'
 import { predictAPI } from '../services/api'
+import ChatAssistant from '../components/ChatAssistant'
 
 export default function PredictPage() {
   const fileInputRef = useRef(null)
@@ -219,6 +220,9 @@ export default function PredictPage() {
                 </div>
               )}
             </div>
+
+            {/* Chat Assistant Block */}
+            <ChatAssistant crop={result.crop} disease={result.disease} />
           </div>
         )}
       </div>
