@@ -1,15 +1,27 @@
 import { useState, useRef } from 'react'
+import { useLocation } from 'react-router-dom'
 import { Upload, Leaf, AlertTriangle, CheckCircle2, RefreshCw, Sparkles, Droplets, Sprout, ShieldAlert } from 'lucide-react'
 import { predictAPI } from '../services/api'
 import ChatAssistant from '../components/ChatAssistant'
+import ReportButton from '../components/ReportButton'
 
 export default function PredictPage() {
+  const location = useLocation()
   const fileInputRef = useRef(null)
+  const reportRef = useRef(null)
+
+  const initialScan = location.state?.scan || null
+  const initialPreview = initialScan?.imageUrl
+    ? initialScan.imageUrl.startsWith('http')
+      ? initialScan.imageUrl
+      : `http://localhost:8000${initialScan.imageUrl}`
+    : ''
+
   const [selectedFile, setSelectedFile] = useState(null)
-  const [previewUrl, setPreviewUrl] = useState('')
+  const [previewUrl, setPreviewUrl] = useState(initialPreview)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [result, setResult] = useState(null)
+  const [result, setResult] = useState(initialScan)
 
   const handleFileSelect = (file) => {
     if (!file) return
@@ -81,7 +93,7 @@ export default function PredictPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         <div className={result ? "lg:col-span-5" : "w-full max-w-2xl mx-auto lg:col-span-12"}>
-          <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+          <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs">
             {!previewUrl ? (
               <div
                 onDragOver={(e) => e.preventDefault()}
@@ -145,7 +157,11 @@ export default function PredictPage() {
 
         {result && (
           <div className="lg:col-span-7 space-y-6">
-            <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-6">
+            <div className="flex justify-end">
+              <ReportButton scan={result} reportRef={reportRef} />
+            </div>
+
+            <div ref={reportRef} className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs space-y-6">
               <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-100">
                 <div>
                   <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Target Crop</span>
@@ -181,47 +197,52 @@ export default function PredictPage() {
                   <h3 className="text-sm font-bold text-slate-900">Recommended Treatment Protocol</h3>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/60">
-                      <div className="flex items-center gap-2 text-rose-700 text-xs font-bold mb-2">
-                        <Droplets className="w-4 h-4" />
-                        <span>Chemical Controls</span>
+                    {result.treatment.chemical && (
+                      <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/60">
+                        <div className="flex items-center gap-2 text-rose-700 text-xs font-bold mb-2">
+                          <Droplets className="w-4 h-4" />
+                          <span>Chemical Controls</span>
+                        </div>
+                        <ul className="text-xs text-slate-600 space-y-1.5 list-disc list-inside">
+                          {result.treatment.chemical.map((item, idx) => (
+                            <li key={idx}>{item}</li>
+                          ))}
+                        </ul>
                       </div>
-                      <ul className="text-xs text-slate-600 space-y-1.5 list-disc list-inside">
-                        {result.treatment.chemical.map((item, idx) => (
-                          <li key={idx}>{item}</li>
-                        ))}
-                      </ul>
-                    </div>
+                    )}
 
-                    <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/60">
-                      <div className="flex items-center gap-2 text-emerald-700 text-xs font-bold mb-2">
-                        <Sprout className="w-4 h-4" />
-                        <span>Organic Solutions</span>
+                    {result.treatment.organic && (
+                      <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/60">
+                        <div className="flex items-center gap-2 text-emerald-700 text-xs font-bold mb-2">
+                          <Sprout className="w-4 h-4" />
+                          <span>Organic Solutions</span>
+                        </div>
+                        <ul className="text-xs text-slate-600 space-y-1.5 list-disc list-inside">
+                          {result.treatment.organic.map((item, idx) => (
+                            <li key={idx}>{item}</li>
+                          ))}
+                        </ul>
                       </div>
-                      <ul className="text-xs text-slate-600 space-y-1.5 list-disc list-inside">
-                        {result.treatment.organic.map((item, idx) => (
-                          <li key={idx}>{item}</li>
-                        ))}
-                      </ul>
-                    </div>
+                    )}
 
-                    <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/60">
-                      <div className="flex items-center gap-2 text-sky-700 text-xs font-bold mb-2">
-                        <ShieldAlert className="w-4 h-4" />
-                        <span>Prevention Strategy</span>
+                    {result.treatment.prevention && (
+                      <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/60">
+                        <div className="flex items-center gap-2 text-sky-700 text-xs font-bold mb-2">
+                          <ShieldAlert className="w-4 h-4" />
+                          <span>Prevention Strategy</span>
+                        </div>
+                        <ul className="text-xs text-slate-600 space-y-1.5 list-disc list-inside">
+                          {result.treatment.prevention.map((item, idx) => (
+                            <li key={idx}>{item}</li>
+                          ))}
+                        </ul>
                       </div>
-                      <ul className="text-xs text-slate-600 space-y-1.5 list-disc list-inside">
-                        {result.treatment.prevention.map((item, idx) => (
-                          <li key={idx}>{item}</li>
-                        ))}
-                      </ul>
-                    </div>
+                    )}
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Chat Assistant Block */}
             <ChatAssistant crop={result.crop} disease={result.disease} />
           </div>
         )}
