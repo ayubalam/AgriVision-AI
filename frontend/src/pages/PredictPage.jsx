@@ -1,10 +1,11 @@
 import { useState, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
-import { Upload, Leaf, AlertTriangle, CheckCircle2, RefreshCw, Sparkles, Droplets, Sprout, ShieldAlert, Camera } from 'lucide-react'
+import { Upload, Leaf, AlertTriangle, CheckCircle2, RefreshCw, Sparkles, Droplets, Sprout, ShieldAlert, Camera, Crop } from 'lucide-react'
 import { predictAPI } from '../services/api'
 import ChatAssistant from '../components/ChatAssistant'
 import ReportButton from '../components/ReportButton'
 import CameraCapture from '../components/CameraCapture'
+import ImageCropper from '../components/ImageCropper'
 import { saveScanToHistory } from '../utils/historyStorage'
 
 export default function PredictPage() {
@@ -21,6 +22,8 @@ export default function PredictPage() {
 
   const [selectedFile, setSelectedFile] = useState(null)
   const [previewUrl, setPreviewUrl] = useState(initialPreview)
+  const [rawImageSrc, setRawImageSrc] = useState(null)
+  const [showCropper, setShowCropper] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [result, setResult] = useState(initialScan)
@@ -35,16 +38,23 @@ export default function PredictPage() {
 
     setError('')
     setResult(null)
-    setSelectedFile(file)
-    setPreviewUrl(URL.createObjectURL(file))
+    const objectUrl = URL.createObjectURL(file)
+    setRawImageSrc(objectUrl)
+    setShowCropper(true)
+  }
+
+  const handleCropComplete = (croppedFile, croppedPreviewUrl) => {
+    setShowCropper(false)
+    setSelectedFile(croppedFile)
+    setPreviewUrl(croppedPreviewUrl)
   }
 
   const handleCameraCapture = (file, dataUrl) => {
     setShowCamera(false)
     setError('')
     setResult(null)
-    setSelectedFile(file)
-    setPreviewUrl(dataUrl)
+    setRawImageSrc(dataUrl)
+    setShowCropper(true)
   }
 
   const handleDrop = (e) => {
@@ -77,6 +87,7 @@ export default function PredictPage() {
   const handleReset = () => {
     setSelectedFile(null)
     setPreviewUrl('')
+    setRawImageSrc(null)
     setResult(null)
     setError('')
   }
@@ -159,14 +170,28 @@ export default function PredictPage() {
 
                 <div className="flex gap-3">
                   {!result ? (
-                    <button
-                      onClick={handleScan}
-                      disabled={loading}
-                      className="flex-1 py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-sm transition-all shadow-md shadow-emerald-600/20 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
-                    >
-                      <Leaf className="w-4 h-4" />
-                      <span>Diagnose Crop Health</span>
-                    </button>
+                    <>
+                      <button
+                        onClick={handleScan}
+                        disabled={loading}
+                        className="flex-1 py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-sm transition-all shadow-md shadow-emerald-600/20 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <Leaf className="w-4 h-4" />
+                        <span>Diagnose Crop Health</span>
+                      </button>
+
+                      {rawImageSrc && (
+                        <button
+                          onClick={() => setShowCropper(true)}
+                          disabled={loading}
+                          className="py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+                          title="Crop/Adjust Image"
+                        >
+                          <Crop className="w-4 h-4 text-emerald-600" />
+                          <span className="hidden sm:inline">Crop</span>
+                        </button>
+                      )}
+                    </>
                   ) : null}
 
                   <button
@@ -280,6 +305,14 @@ export default function PredictPage() {
         <CameraCapture
           onCapture={handleCameraCapture}
           onClose={() => setShowCamera(false)}
+        />
+      )}
+
+      {showCropper && rawImageSrc && (
+        <ImageCropper
+          imageSrc={rawImageSrc}
+          onCropComplete={handleCropComplete}
+          onCancel={() => setShowCropper(false)}
         />
       )}
     </div>
